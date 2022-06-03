@@ -9,6 +9,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#define SV_IMPLEMENTATION
+#include "./sv.h"
+
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -46,7 +49,11 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    fwrite(content_data, content_size, 1, stdout);
+    String_View content = sv_from_parts(content_data, content_size);
+    while(content.count > 0){
+        String_View line = sv_chop_by_delim(&content, '\n');
+        printf("(" SV_Fmt ")\n", SV_Arg(line));
+    }
 
     munmap(content_data, content_size);
     close(fd);
