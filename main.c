@@ -15,6 +15,8 @@
 #define SV_IMPLEMENTATION
 #include "./sv.h"
 #include "./ll.h"
+#define STB_DS_IMPLEMENTATION
+#include "./stb_ds.h"
 
 typedef struct
 {
@@ -78,33 +80,82 @@ size_t word_count(String_View content, Word needle)
     return count;
 }
 
-#define NO_CACHE
+#define CACHE_CAP 256
+
+// #define NO_CACHE
+
 #ifdef NO_CACHE
-bool cache_get(Word word, size_t *freq)
-{
-    (void)word;
-    (void)freq;
-    return false;
-}
 
-void cache_put(Word word, size_t freq)
-{
-    (void)word;
-    (void)freq;
-}
+#define cache_get(word, freq) false
+#define cache_put(word, freq) \
+    do                        \
+    {                         \
+    } while (0)
+#define cace_cleanup() \
+    do                 \
+    {                  \
+    } while (0)
+
 #else
-bool cache_get(Word word, size_t *freq)
+
+typedef struct
 {
-    (void)word;
-    (void)freq;
-    return false;
+    ptrdiff_t prev;
+    ptrdiff_t next;
+    Word key;
+} Node;
+
+typedef struct
+{
+    Word key;
+    size_t value;
+    ptrdiff_t queue_idx;
+} Item;
+
+Item *table = NULL;
+Node *queue = NULL;
+
+bool cache_get(Word key, size_t *value)
+{
+    ptrdiff_t index = hmgeti(table, key);
+    if (index < 0 || !value)
+    {
+        return false;
+    }
+    *value = table[index].value;
+    llmovefront(queue, table[index].queue_idx);
+    return true;
 }
 
-void cache_put(Word word, size_t freq)
+void cache_put(Word key, size_t value)
 {
-    (void)word;
-    (void)freq;
+    if (llcount(queue) < CACHE_CAP)
+    {
+        llpushfront(queue);
+    }
+    else
+    {
+        hmdel(table, queue[llback(queue)].key);
+        llmovefront(queue, llback(queue));
+    }
+
+    queue[llfront(queue)].key = key;
+
+    Item item = {
+        .key = key,
+        .value = value,
+        .queue_idx = llfront(queue),
+    };
+
+    hmputs(table, item);
 }
+
+void cache_cleanup(void)
+{
+    llfree(queue);
+    hmfree(table);
+}
+
 #endif
 
 typedef struct
@@ -175,6 +226,8 @@ int main(int argc, char **argv)
 
     munmap(content_data, content_size);
     close(fd);
+
+    cache_cleanup();
 
     return 0;
 }
