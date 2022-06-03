@@ -43,6 +43,30 @@ Word word_norm(Word word)
     return result;
 }
 
+size_t word_count(String_View content, Word needle)
+{
+    size_t count = 0;
+    while (content.count > 0)
+    {
+        String_View line = sv_chop_by_delim(&content, '\n');
+        while (line.count > 0)
+        {
+            String_View word_sv = sv_trim(sv_chop_by_delim(&line, ' '));
+            if (word_sv.count == 0)
+            {
+                continue;
+            }
+            Word word = word_norm(sv_as_word(word_sv));
+            if (strcmp(word.data, needle.data) != 0)
+            {
+                continue;
+            }
+            count++;
+        }
+    }
+    return count;
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -86,13 +110,16 @@ int main(int argc, char **argv)
         String_View line = sv_chop_by_delim(&content, '\n');
         while (line.count > 0)
         {
-            String_View word_sv = sv_trim(sv_chop_by_delim(&line, ' '));
-            if (word_sv.count == 0)
+            String_View word_orig = sv_trim(sv_chop_by_delim(&line, ' '));
+            if (word_orig.count == 0)
             {
                 continue;
             }
-            printf("(%s)\n", word_norm(sv_as_word(word_sv)).data);
+            Word needle = word_norm(sv_as_word(word_orig));
+            size_t freq = word_count(sv_from_parts(content_data, content_size), needle);
+            printf(SV_Fmt "(%zu) ", SV_Arg(word_orig), freq);
         }
+        printf("\n");
     }
 
     munmap(content_data, content_size);
