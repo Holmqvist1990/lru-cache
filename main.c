@@ -27,7 +27,7 @@ Word sv_as_word(String_View sv)
     return word;
 }
 
-Word f(Word word)
+Word word_norm(Word word)
 {
     Word result = {0};
     char *in = word.data;
@@ -37,7 +37,7 @@ Word f(Word word)
         char c = *in++;
         if (isalnum(c))
         {
-            *out++ = c;
+            *out++ = toupper(c);
         }
     }
     return result;
@@ -86,11 +86,12 @@ int main(int argc, char **argv)
         String_View line = sv_chop_by_delim(&content, '\n');
         while (line.count > 0)
         {
-            String_View word = sv_trim(sv_chop_by_delim(&line, ' '));
-            if (word.count == 0)
+            String_View word_sv = sv_trim(sv_chop_by_delim(&line, ' '));
+            if (word_sv.count == 0)
             {
                 continue;
             }
+            printf("(%s)\n", word_norm(sv_as_word(word_sv)).data);
         }
     }
 
