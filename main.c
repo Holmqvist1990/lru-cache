@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
+#include <assert.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -11,6 +13,35 @@
 
 #define SV_IMPLEMENTATION
 #include "./sv.h"
+
+typedef struct
+{
+    char data[32];
+} Word;
+
+Word sv_as_word(String_View sv)
+{
+    Word word = {0};
+    assert(sv.count < sizeof(word.data));
+    memcpy(word.data, sv.data, sv.count);
+    return word;
+}
+
+Word f(Word word)
+{
+    Word result = {0};
+    char *in = word.data;
+    char *out = result.data;
+    while (*in)
+    {
+        char c = *in++;
+        if (isalnum(c))
+        {
+            *out++ = c;
+        }
+    }
+    return result;
+}
 
 int main(int argc, char **argv)
 {
@@ -50,9 +81,17 @@ int main(int argc, char **argv)
     }
 
     String_View content = sv_from_parts(content_data, content_size);
-    while(content.count > 0){
+    while (content.count > 0)
+    {
         String_View line = sv_chop_by_delim(&content, '\n');
-        printf("(" SV_Fmt ")\n", SV_Arg(line));
+        while (line.count > 0)
+        {
+            String_View word = sv_trim(sv_chop_by_delim(&line, ' '));
+            if (word.count == 0)
+            {
+                continue;
+            }
+        }
     }
 
     munmap(content_data, content_size);
