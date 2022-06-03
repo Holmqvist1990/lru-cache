@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
@@ -13,6 +14,7 @@
 
 #define SV_IMPLEMENTATION
 #include "./sv.h"
+#include "./ll.h"
 
 typedef struct
 {
@@ -24,6 +26,15 @@ Word sv_as_word(String_View sv)
     Word word = {0};
     assert(sv.count < sizeof(word.data));
     memcpy(word.data, sv.data, sv.count);
+    return word;
+}
+
+Word cstr_as_word(const char *cstr)
+{
+    Word word = {0};
+    size_t len = strlen(cstr);
+    assert(len < sizeof(word.data));
+    memcpy(word.data, cstr, len);
     return word;
 }
 
@@ -95,6 +106,12 @@ void cache_put(Word word, size_t freq)
     (void)freq;
 }
 #endif
+
+typedef struct
+{
+    Word key;
+    size_t value;
+} Table;
 
 int main(int argc, char **argv)
 {
